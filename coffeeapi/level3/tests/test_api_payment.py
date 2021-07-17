@@ -8,29 +8,16 @@ from coffeeapi.level3.domain import Status
 
 def test_payment_success(apiclient, onecoffee):
     url = '/v3/payment/1'
-    response = apiclient.put(url)
+    data = dict(amount=199)
+    response = apiclient.put(url, data=data)
 
     assert response.status_code == HTTPStatus.OK
-    assert dict(id=1, coffee='latte', size='large', milk='whole', location='takeAway',
-                created_at=datetime(2021, 4, 28), status='Paid',
-                links=dict(
-                    cancel=None,
-                    payment=None,
-                    receipt=dict(url='/v3/receipt/1', method='DELETE'),
-                    self=dict(url='/v3/order/1', method='GET'),
-                    update=None
-                )) == onecoffee.read(1).vars()
 
-    expected = dict(id=1, coffee='latte', size='large', milk='whole', location='takeAway',
-                    created_at=datetime(2021, 4, 28), status='Paid',
-                    links=dict(
-                        cancel=None,
-                        payment=None,
-                        receipt=dict(url='/v3/receipt/1', method='DELETE'),
-                        self=dict(url='/v3/order/1', method='GET'),
-                        update=None
-                    ))
+    links = dict(self='http://testserver/v3/order/1')
+    expected = dict(links=links)
     assert response.json() == expected
+    assert len(onecoffee.orders) == 1
+    assert onecoffee.read(1).is_paid()
 
 
 def test_payment_method_not_allowed(apiclient, onecoffee):
@@ -40,17 +27,29 @@ def test_payment_method_not_allowed(apiclient, onecoffee):
     assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
 
-def test_payment_conflict(apiclient, order, coffeeshop):
-    url = '/v3/payment/1'
-    order.status = Status.Paid
-    coffeeshop.create(order)
-    response = apiclient.put(url)
-
-    assert response.status_code == HTTPStatus.CONFLICT
-
-
 def test_payment_not_found(apiclient, onecoffee):
     url = '/v3/payment/404'
-    response = apiclient.put(url)
+    data = dict(amount='199')
+    response = apiclient.put(url, data=data)
 
     assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_update_badreq(apiclient, onecoffee):
+    url = '/v3/payment/1'
+    data = dict()
+    response = apiclient.put(url, data=data)
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert len(onecoffee.orders) == 1
+    assert not onecoffee.read(1).is_paid()
+
+
+def test_payment_already_paid(apiclient, onecoffee):
+    onecoffee.read(1).status = Status.Paid
+    url = '/v3/payment/1'
+    data = dict(amount=199)
+
+    response = apiclient.put(url, data=data)
+
+    assert response.status_code == HTTPStatus.CONFLICT

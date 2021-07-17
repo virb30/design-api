@@ -11,17 +11,20 @@ def test_update_success(apiclient, onecoffee):
     data = dict(coffee='curto', milk='', size='small', location='takeAway')
     response = apiclient.put(url, data=data)
 
-    assert response.status_code == HTTPStatus.NO_CONTENT
+    links = dict(
+        self='http://testserver/v3/order/1',
+        update='http://testserver/v3/order/1',
+        cancel='http://testserver/v3/order/1',
+        payment='http://testserver/v3/payment/1'
+    )
+
+    expected = dict(
+        coffee='curto', milk='', size='small', id=1, location='takeAway',
+        created_at=datetime(2021, 4, 28), status='Placed', links=links)
+
+    assert response.status_code == HTTPStatus.OK
     assert len(onecoffee.orders) == 1
-    assert (dict(coffee='curto', milk='', size='small', id=1, location='takeAway',
-                 created_at=datetime(2021, 4, 28), status='Placed',
-                links=dict(
-                    cancel=dict(url='/v3/order/1', method='DELETE'),
-                    payment=dict(url='/v3/payment/1', method='PUT'),
-                    receipt=None, self=dict(url='/v3/order/1', method='GET'),
-                    update=dict(url='/v3/order/1', method='PUT')
-                ))
-            == onecoffee.read(1).vars())
+    assert response.json() == expected
 
 
 def test_update_badreq(apiclient, onecoffee):

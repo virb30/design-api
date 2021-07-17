@@ -11,25 +11,41 @@ def test_post_sucess(apiclient, coffeeshop):
     created_time = datetime(2021, 4, 28)
 
     assert response.status_code == HTTPStatus.CREATED
-    assert dict(id=1, coffee='latte', size='large', milk='whole',
-                location='takeAway', status='Placed', created_at=created_time,
-                links=dict(
-                    cancel=dict(url='/v3/order/1', method='DELETE'),
-                    payment=dict(url='/v3/payment/1', method='PUT'),
-                    receipt=None,
-                    self=dict(url='/v3/order/1', method='GET'),
-                    update=dict(url='/v3/order/1', method='PUT')
-                )) == coffeeshop.read(1).vars()
+    assert response.headers['location'] == 'http://testserver/v3/order/1'
     assert len(coffeeshop.orders) == 1
 
+    links = dict(
+        self='http://testserver/v3/order/1',
+        update='http://testserver/v3/order/1',
+        cancel='http://testserver/v3/order/1',
+        payment='http://testserver/v3/payment/1'
+    )
+
+    # links = [
+    #     {
+    #         'rel': 'self',
+    #         'src': 'http://testserver/order/1',
+    #         'verb': 'GET',
+    #     },
+    #     {
+    #         'rel': 'update',
+    #         'src': 'http://testserver/order/1',
+    #         'verb': 'PUT',
+    #     },
+    #     {
+    #         'rel': 'cancel',
+    #         'src': 'http://testserver/order/1',
+    #         'verb': 'DELETE',
+    #     },
+    #     {
+    #         'rel': 'payment',
+    #         'src': 'http://testserver/payment/1',
+    #         'verb': 'PUT',
+    #     },
+    # ]
+
     expected = dict(id=1, coffee='latte', size='large', milk='whole', location='takeAway',
-                    created_at=datetime(2021, 4, 28), status='Placed',
-                    links=dict(
-                        cancel=dict(url='/v3/order/1', method='DELETE'),
-                        payment=dict(url='/v3/payment/1', method='PUT'),
-                        receipt=None, self=dict(url='/v3/order/1', method='GET'),
-                        update=dict(url='/v3/order/1', method='PUT')
-                    ))
+                    created_at=datetime(2021, 4, 28), status='Placed', links=links)
     assert response.json() == expected
 
 

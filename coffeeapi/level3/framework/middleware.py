@@ -1,4 +1,4 @@
-from coffeeapi.level3.domain import DoesNotExist, StatusConflict
+from coffeeapi.level3.domain import DoesNotExist, Conflicted
 from coffeeapi.level3.framework.http import NotFound, Conflict
 
 
@@ -12,5 +12,5 @@ class FrameworkCommonExceptionHandler:
     def process_exception(self, request, exc):
         if isinstance(exc, DoesNotExist):
             return NotFound()
-        if isinstance(exc, StatusConflict):
+        elif isinstance(exc, Conflicted):
             return Conflict()

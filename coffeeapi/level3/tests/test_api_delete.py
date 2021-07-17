@@ -10,7 +10,8 @@ def test_delete_success(apiclient, onecoffee):
     response = apiclient.delete(url)
 
     assert response.status_code == HTTPStatus.NO_CONTENT
-    assert onecoffee.read(1).status == Status.Canceled
+    assert len(onecoffee.orders) == 1
+    assert onecoffee.read(1).is_cancelled()
 
 
 def test_delete_not_found(apiclient, onecoffee):
@@ -20,10 +21,9 @@ def test_delete_not_found(apiclient, onecoffee):
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_delete_conflict(apiclient, order, coffeeshop):
+def test_delete_conflict(apiclient, onecoffee):
     url = '/v3/order/1'
-    order.status = Status.Paid
-    coffeeshop.create(order)
+    onecoffee.read(1).status = Status.Paid
     response = apiclient.delete(url)
 
     assert response.status_code == HTTPStatus.CONFLICT
